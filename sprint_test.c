@@ -27,19 +27,25 @@ typedef char* my_va_list;
 #define __va_rounded_size(TYPE) (((sizeof(TYPE)+sizeof(int)-1)/sizeof(int))*sizeof(int))
 #endif
  
-#ifndef va_start
-#define va_start(AP, LASTARG)   (AP = ((char *)& (LASTARG) + __va_rounded_size(LASTARG)))
-#endif
+/* #ifndef va_start */
+/* #define va_start(AP, LASTARG)   (AP = ((char *)& (LASTARG) + __va_rounded_size(LASTARG))) */
+/* #endif */
  
-#ifndef va_arg
-#define va_arg(AP, TYPE)        (AP += __va_rounded_size(TYPE), *((TYPE *)(AP - __va_rounded_size(TYPE))))
-#endif
+/* #ifndef va_arg */
+/* #define va_arg(AP, TYPE)        (AP += __va_rounded_size(TYPE), *((TYPE *)(AP - __va_rounded_size(TYPE)))) */
+/* #endif */
  
-#ifndef va_end
-#define va_end(AP)              (AP = (my_va_list)0 )
-#endif
- 
- 
+/* #ifndef va_end */
+/* #define va_end(AP)              (AP = (my_va_list)0 ) */
+/* #endif */
+typedef char * my_va_list;
+#define va_end(ap) ( ap = (my_va_list)0 )
+#define _INTSIZEOF(n) ((sizeof(n)+sizeof(int)-1)&~(sizeof(int) - 1) )
+#define va_start(ap,v) ( ap = (my_va_list)&v - _INTSIZEOF(v) )
+#define va_arg(ap,t) ( *(t *)((ap -= _INTSIZEOF(t)) + _INTSIZEOF(t)) )
+#define va_end(ap) ( ap = (my_va_list)0 )
+
+
 #define ZEROPAD 1               // Pad with zero
 #define SIGN    2               // Unsigned/signed long
 #define PLUS    4               // Show plus
@@ -961,6 +967,8 @@ static int vsprintf(char *buf, const char *fmt, my_va_list args)
                 printf("%s", s);
                 printf("precision, %d", precision);
                 len = strnlen(s, precision);
+                s = va_arg(args, char *);
+                printf("test#%s#", s);
                 if (!(flags & LEFT)) while (len < field_width--) *str++ = ' ';
                 for (int i = 0; i < len; ++i) *str++ = *s++;
                 while (len < field_width--) *str++ = ' ';
@@ -1082,7 +1090,22 @@ static int vsprintf(char *buf, const char *fmt, my_va_list args)
     *str = '\0';
     return str - buf;
 }
+int my_sprintf_string(char *buf, const char *fmt,char* test, ...)
+{
+    my_va_list args;
+    int n;
+    char *s = NULL;
+    va_start(args, fmt);
+    printf("%u, %u",(unsigned int)args,(unsigned int)&fmt);
+    s = va_arg(args, char*);
+    printf("p1,%s\n", s);
+    s = va_arg(args, char*);
+    printf("p2, %s\n", s);
+    va_end(args);
  
+    return n;
+}
+
 int sprintf(char *buf, const char *fmt, ...)
 {
     my_va_list args;
@@ -1098,7 +1121,10 @@ int sprintf(char *buf, const char *fmt, ...)
 int main(void)
 {
 	unsigned char log_tmp[1024] = {0}; 
-	sprintf(log_tmp, "abc%s", "hello");
-	printf("%s", log_tmp);
+    log_tmp[0] = 'F';
+    log_tmp[1] = 'K';
+    /* printf("%d,%d", (int)sizeof(char*), (int)sizeof(char **)); */
+	my_sprintf_string(log_tmp, "abc", "godlike", "def");
+	/* printf("%s", log_tmp); */
 	return 0;
 }
